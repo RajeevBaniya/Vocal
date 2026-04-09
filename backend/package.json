@@ -1,0 +1,30 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "Electron backend runtime",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"const fs=require('node:fs');const path=require('node:path');const distPath=path.join(process.cwd(),'dist');const backendPath=path.join(distPath,'backend');const runtimePath=path.join(distPath,'runtime');if(fs.existsSync(runtimePath)){fs.rmSync(runtimePath,{recursive:true,force:true});}if(fs.existsSync(backendPath)){fs.renameSync(backendPath,runtimePath);}const entryPath=path.join(distPath,'main.js');const launcher='\\\"use strict\\\";require(\\\"./runtime/src/main.js\\\");\\n';fs.writeFileSync(entryPath,launcher,'utf-8');\"",
+    "dev": "npm run build && electron dist/main.js",
+    "start": "npm run build && electron dist/main.js"
+  },
+  "keywords": [
+    "electron",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@deepgram/sdk": "^5.0.0",
+    "@nut-tree-fork/nut-js": "^4.2.6",
+    "dotenv": "^17.4.1",
+    "electron": "^41.1.1",
+    "groq-sdk": "^1.1.2",
+    "node-record-lpcm16": "^1.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2"
+  }
+}
