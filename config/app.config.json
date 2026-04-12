@@ -1,0 +1,20 @@
+{
+  "appName": "Vocalflow",
+  "environment": "development",
+  "window": {
+    "width": 1024,
+    "height": 720
+  },
+  "deepgram": {
+    "model": "nova-2",
+    "language": "en"
+  },
+  "groq": {
+    "model": ""
+  },
+  "hotkey": "Ctrl+Alt+R",
+  "enableGroqPostProcessing": false,
+  "postProcessingMode": "none",
+  "translationTargetLanguage": "en",
+  "autoPasteEnabled": false
+}
