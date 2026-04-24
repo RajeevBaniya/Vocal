@@ -47,9 +47,10 @@ const createTextInjectorService = (): TextInjectorService => {
       logger.info("text_injection_success", {
         textLength: normalizedText.length
       });
+      const clipboardText = clipboard.readText("clipboard");
       return {
         success: true,
-        injectedText: normalizedText,
+        injectedText: clipboardText,
         error: null
       };
     } catch (error) {

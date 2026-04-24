@@ -26,6 +26,9 @@ type AppRuntimeServices = {
   shouldQuit: () => boolean;
 };
 
+const TEST_MODE = process.env.TEST_MODE === "true";
+const TEST_HOTKEY = "Ctrl+Alt+R";
+
 const createServiceRegistry = (): Record<string, never> => {
   return {};
 };
@@ -81,14 +84,15 @@ const bootstrapAppLifecycle = async (): Promise<void> => {
       appState,
       sessionState,
       audioCaptureService,
-      dgStreamService
+      dgStreamService,
+      testModeEnabled: TEST_MODE
     });
     const handleHotkeyActivation = (): void => {
       appState.markHotkeyActivation(nowIso());
       void orchestrator.onHotkeyActivation();
     };
     const registerConfiguredHotkey = (): void => {
-      const currentHotkey = appState.getConfig().hotkey;
+      const currentHotkey = TEST_MODE ? TEST_HOTKEY : appState.getConfig().hotkey;
       appState.setConfiguredHotkey(currentHotkey);
       const registrationResult = hotkeyService.reRegister(
         currentHotkey,
@@ -98,6 +102,11 @@ const bootstrapAppLifecycle = async (): Promise<void> => {
         registrationResult.success,
         registrationResult.error
       );
+      logger.info("hotkey_registration_result", {
+        configuredHotkey: currentHotkey,
+        success: registrationResult.success,
+        error: registrationResult.error
+      });
     };
     const shouldQuit = (): boolean => isQuitting;
     const requestExit = (): void => {
@@ -140,6 +149,17 @@ const bootstrapAppLifecycle = async (): Promise<void> => {
       });
       void dgStreamService.initialize();
       registerConfiguredHotkey();
+      if (TEST_MODE) {
+        logger.info("test_mode_bootstrap_trigger_scheduled", {
+          delayMs: 3000
+        });
+        setTimeout(() => {
+          logger.info("test_mode_bootstrap_trigger_execute", {
+            hotkey: TEST_HOTKEY
+          });
+          void orchestrator.onHotkeyActivation();
+        }, 3000);
+      }
       appState.setReady(true);
       logger.info("app_ready", {
         registrySize: Object.keys(serviceRegistry).length

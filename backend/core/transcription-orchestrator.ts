@@ -20,6 +20,7 @@ type OrchestratorDependencies = {
   dgStreamService: DgStreamService;
   postProcessingService?: PostProcessingService;
   textInjectorService?: TextInjectorService;
+  testModeEnabled?: boolean;
 };
 
 const createTranscriptionOrchestrator = (
@@ -29,8 +30,24 @@ const createTranscriptionOrchestrator = (
     dependencies.postProcessingService ?? createPostProcessingService();
   const textInjectorService =
     dependencies.textInjectorService ?? createTextInjectorService();
+  const testModeEnabled = dependencies.testModeEnabled ?? false;
   let processingLock = false;
   let finalSegments: string[] = [];
+  let hasAutoTriggeredTestMode = false;
+
+  const sleep = async (delayMs: number): Promise<void> => {
+    await new Promise<void>((resolvePromise) => {
+      setTimeout(() => resolvePromise(), delayMs);
+    });
+  };
+
+  const logStateSnapshot = (event: string, extra: Record<string, unknown> = {}): void => {
+    logger.info(event, {
+      ...extra,
+      sessionPhase: dependencies.sessionState.getPhase(),
+      appStatus: dependencies.appState.getStatus()
+    });
+  };
 
   const syncSessionPhase = (): void => {
     dependencies.appState.setSessionPhase(dependencies.sessionState.getPhase());
@@ -63,18 +80,72 @@ const createTranscriptionOrchestrator = (
       | "failed"
       | "idle"
   ): void => {
+    const previousPhase = dependencies.sessionState.getPhase();
     if (!dependencies.sessionState.transitionTo(phase)) {
       logger.warn("orchestrator_transition_rejected", {
-        from: dependencies.sessionState.getPhase(),
+        from: previousPhase,
         to: phase
       });
       return;
     }
     syncSessionPhase();
+    logStateSnapshot("orchestrator_phase_transition", {
+      from: previousPhase,
+      to: phase,
+      transition: `${previousPhase}->${phase}`
+    });
+  };
+
+  const runMockFlow = async (): Promise<void> => {
+    resetSessionBuffers();
+    dependencies.appState.setAvailability("busy");
+    transitionTo("recording");
+    await sleep(300);
+    transitionTo("transcribing");
+    await sleep(300);
+    transitionTo("processing");
+
+    const rawTranscript = "TEST HELLO WORLD";
+    dependencies.appState.setTranscriptResults(rawTranscript, rawTranscript);
+    dependencies.appState.setPostProcessingStatus(false, null);
+    const processedTranscript = "FINAL TEST INJECTED";
+    dependencies.appState.setTranscriptResults(rawTranscript, processedTranscript);
+
+    transitionTo("injecting");
+    dependencies.appState.setInjectionStatus("injecting", null, "");
+    const injectionResult = await textInjectorService.injectText(processedTranscript);
+    dependencies.appState.setInjectionStatus(
+      injectionResult.success ? "succeeded" : "failed",
+      injectionResult.error,
+      injectionResult.injectedText
+    );
+    if (!injectionResult.success) {
+      transitionTo("failed");
+      transitionTo("idle");
+      dependencies.appState.setAvailability("idle");
+      logStateSnapshot("orchestrator_test_mode_flow_failed", {
+        reason: injectionResult.error
+      });
+      return;
+    }
+    transitionTo("completed");
+    transitionTo("idle");
+    dependencies.appState.setAvailability("idle");
+    logStateSnapshot("orchestrator_test_mode_flow_completed", {
+      injectedText: injectionResult.injectedText
+    });
   };
 
   const startFlow = async (): Promise<void> => {
     if (dependencies.sessionState.getPhase() !== "idle") {
+      return;
+    }
+    if (testModeEnabled) {
+      logStateSnapshot("orchestrator_test_mode_armed", {
+        triggerDelayMs: 3000
+      });
+      await sleep(3000);
+      await runMockFlow();
       return;
     }
     resetSessionBuffers();
@@ -165,6 +236,12 @@ const createTranscriptionOrchestrator = (
   };
 
   const onHotkeyActivation = async (): Promise<void> => {
+    if (testModeEnabled && !hasAutoTriggeredTestMode) {
+      hasAutoTriggeredTestMode = true;
+      logStateSnapshot("orchestrator_test_mode_hotkey_activation", {
+        testModeEnabled
+      });
+    }
     if (processingLock) {
       return;
     }
