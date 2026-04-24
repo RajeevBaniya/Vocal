@@ -10,7 +10,7 @@ type SessionPhase =
   | "completed"
   | "failed";
 
-type AppStatusSnapshot = {
+interface AppStatusSnapshot {
   isReady: boolean;
   isSettingsWindowVisible: boolean;
   isTrayInitialized: boolean;
@@ -39,6 +39,10 @@ type AppStatusSnapshot = {
   injectionStatus: "idle" | "injecting" | "succeeded" | "failed";
   lastInjectionError: Nullable<string>;
   lastInjectedText: string;
-};
+  sessionState?: { phase: string };
+  hotkeyStatus?: { registered: boolean };
+  readiness?: { audio: boolean; stt: boolean };
+  lastTranscript?: string;
+}
 
 export type { AppStatusSnapshot, AvailabilityStatus, Nullable, SessionPhase };

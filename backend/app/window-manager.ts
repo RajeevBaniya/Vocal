@@ -1,5 +1,5 @@
 import { BrowserWindow } from "electron";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import type { AppConfig } from "../config/app-config";
 import type { AppState } from "../state/app-state";
 
@@ -31,7 +31,8 @@ const createSettingsWindow = (config: AppConfig, appState: AppState): BrowserWin
     settingsWindow = null;
     appState.setSettingsWindowVisible(false);
   });
-  void windowRef.loadURL("about:blank");
+  const indexPath = join(__dirname, "..", "..", "..", "..", "frontend", "dist", "index.html");
+  void windowRef.loadFile(indexPath);
   settingsWindow = windowRef;
   appState.setSettingsWindowVisible(false);
   return windowRef;
