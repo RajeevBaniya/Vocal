@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node -e \"const fs=require('node:fs');const path=require('node:path');const distPath=path.join(process.cwd(),'dist');const backendPath=path.join(distPath,'backend');const runtimePath=path.join(distPath,'runtime');if(fs.existsSync(runtimePath)){fs.rmSync(runtimePath,{recursive:true,force:true});}if(fs.existsSync(backendPath)){fs.renameSync(backendPath,runtimePath);}const entryPath=path.join(distPath,'main.js');const launcher='\\\"use strict\\\";require(\\\"./runtime/src/main.js\\\");\\n';fs.writeFileSync(entryPath,launcher,'utf-8');\"",
     "dev": "npm run build && electron dist/main.js",
-    "start": "npm run build && electron dist/main.js"
+    "start": "npm run build && electron dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "electron",
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^3.2.4"
   }
 }
