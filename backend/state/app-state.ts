@@ -1,5 +1,4 @@
 import { app } from "electron";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { AppConfig } from "../config/app-config";
 import type {
@@ -9,10 +8,10 @@ import type {
   SessionPhase
 } from "../../shared/types/shared-types";
 import type { TranscriptChunkContract } from "../../shared/contracts/transcript-contracts";
-
-type UserSettings = {
-  launchOnStartup: boolean;
-};
+import {
+  createUserSettingsRepository,
+  type UserSettings
+} from "./user-settings-repository";
 
 type AppState = {
   getConfig: () => AppConfig;
@@ -52,41 +51,12 @@ type AppState = {
   ) => void;
 };
 
-const defaultSettings: UserSettings = {
-  launchOnStartup: false
-};
-
 const createAppState = (config: AppConfig): AppState => {
   const stateDirectory = app.getPath("userData");
   const stateFilePath = join(stateDirectory, "settings.json");
+  const userSettingsRepository = createUserSettingsRepository(stateFilePath);
 
-  const ensureStorageDirectory = (): void => {
-    if (!existsSync(stateDirectory)) {
-      mkdirSync(stateDirectory, { recursive: true });
-    }
-  };
-
-  const readPersistedSettings = (): UserSettings => {
-    if (!existsSync(stateFilePath)) {
-      return defaultSettings;
-    }
-    const rawValue = readFileSync(stateFilePath, "utf-8");
-    if (rawValue.trim().length === 0) {
-      return defaultSettings;
-    }
-    const parsedValue = JSON.parse(rawValue) as Partial<UserSettings>;
-    return {
-      launchOnStartup:
-        parsedValue.launchOnStartup ?? defaultSettings.launchOnStartup
-    };
-  };
-
-  const persistSettings = (value: UserSettings): void => {
-    ensureStorageDirectory();
-    writeFileSync(stateFilePath, JSON.stringify(value, null, 2), "utf-8");
-  };
-
-  let currentSettings = readPersistedSettings();
+  let currentSettings = userSettingsRepository.load();
 
   let currentConfig = config;
   const getConfig = (): AppConfig => currentConfig;
@@ -96,7 +66,7 @@ const createAppState = (config: AppConfig): AppState => {
   const getSettings = (): UserSettings => currentSettings;
   const setSettings = (nextSettings: UserSettings): void => {
     currentSettings = nextSettings;
-    persistSettings(currentSettings);
+    userSettingsRepository.save(currentSettings);
   };
   let status: AppStatusSnapshot = {
     isReady: false,
