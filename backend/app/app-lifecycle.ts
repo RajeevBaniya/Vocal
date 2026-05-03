@@ -29,10 +29,6 @@ type AppRuntimeServices = {
 const TEST_MODE = process.env.TEST_MODE === "true";
 const TEST_HOTKEY = "Ctrl+Alt+R";
 
-const createServiceRegistry = (): Record<string, never> => {
-  return {};
-};
-
 const configureElectronRuntimePaths = (): void => {
   const appDataPath = app.getPath("appData");
   const runtimeRoot = join(appDataPath, "Vocalflow");
@@ -62,7 +58,6 @@ const bootstrapAppLifecycle = async (): Promise<void> => {
     const sessionState = createSessionState();
     appState.setAvailability("idle");
     appState.setSessionPhase(sessionState.getPhase());
-    const serviceRegistry = createServiceRegistry();
     let isQuitting = false;
     const hotkeyService = createHotkeyService();
     const audioStreamManager = createAudioStreamManager();
@@ -162,7 +157,7 @@ const bootstrapAppLifecycle = async (): Promise<void> => {
       }
       appState.setReady(true);
       logger.info("app_ready", {
-        registrySize: Object.keys(serviceRegistry).length
+        testMode: TEST_MODE
       });
 
       app.on("activate", () => {
