@@ -28,5 +28,5 @@
     "types",
     "../shared"
   ],
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "../shared/**/*.test.ts"]
 }
