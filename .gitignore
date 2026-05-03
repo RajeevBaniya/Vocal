@@ -3,8 +3,6 @@
 !.env.example
 __pycache__/
 *.py[cod]
-.venv/
-venv/
 .cursor/
 frontend/node_modules/
 frontend/dist/
