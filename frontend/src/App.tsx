@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { JSX } from "react";
 import type { AppStatusSnapshot } from "../../shared/types/shared-types";
+import { selectDashboardTranscript } from "../../shared/select-dashboard-transcript";
 
 const App = (): JSX.Element => {
   const [status, setStatus] = useState<AppStatusSnapshot | null>(null);
@@ -52,22 +53,10 @@ const App = (): JSX.Element => {
     return status.readiness?.stt ?? status.isSttReady;
   }, [status]);
 
-  const lastTranscript = useMemo(() => {
-    if (status === null) {
-      return "";
-    }
-    const contractValue = status.lastTranscript ?? "";
-    if (contractValue.length > 0) {
-      return contractValue;
-    }
-    if (status.lastProcessedTranscript.length > 0) {
-      return status.lastProcessedTranscript;
-    }
-    if (status.lastSttFinal.length > 0) {
-      return status.lastSttFinal;
-    }
-    return status.lastSttPreview;
-  }, [status]);
+  const lastTranscript = useMemo(
+    () => selectDashboardTranscript(status),
+    [status]
+  );
 
   return (
     <div style={{ padding: "24px", minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
